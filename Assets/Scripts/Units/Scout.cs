@@ -13,11 +13,11 @@ public class Scout : Units
         SetHealth(30.0f);
         SetMoveSpeed(20.0f);
         SetRotate(3.0f);
-        SetRange(3.0f);
         SetIsAlive(true);
         SetIsSelect(false);
         SetUnitCost(5);
         SetUnitWorth(3);
+        SetWeight(5);
     }
 
     void Update()
