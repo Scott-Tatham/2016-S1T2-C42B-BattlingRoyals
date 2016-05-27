@@ -13,10 +13,10 @@ public class King : Units
         SetDef(0.5f);
         SetHealth(300.0f);
         SetMoveSpeed(10.0f);
-        SetRotate(1.0f);
         SetRange(3.0f);
         SetIsAlive(true);
         SetIsSelect(false);
+        SetWeight(30);
     }
     
     void Update()

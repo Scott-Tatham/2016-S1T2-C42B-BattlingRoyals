@@ -13,16 +13,19 @@ public class Units : MonoBehaviour
     private float moveSpeed;
     private float rotate;
     private float range;
+    private bool isRange;
     private bool isAlive;
     private bool isSelect;
     private int unitCost;
     private int unitWorth;
+    private int weight;
+
+    private SphereCollider unitRange;
 
     private float heightDiff;
 
     private float angNormal;
-
-    private Units firstContact;
+    
     private Units enemy;
     private GameObject directEnemy;
 
@@ -46,16 +49,17 @@ public class Units : MonoBehaviour
     public float GetMoveSpeed() { return moveSpeed; }
     public float GetRotate() { return rotate; }
     public float GetRange() { return range; }
+    public bool GetIsRange() { return isRange; }
     public bool GetIsAlive() { return isAlive; }
     public bool GetIsSelect() { return isSelect; }
     public int GetUnitCost() { return unitCost; }
     public int GetUnitWorth() { return unitWorth; }
-
-    public Units GetFirstContact() { return firstContact; }
+    public int GetWeight() { return weight; }
+    
     public Units GetEnemy() { return enemy; }
     public GameObject GetDirectEnemy() { return directEnemy; }
 
-    public List<Vector3> GetPosList() { return positions; }
+    public List<Vector3> GetPositions() { return positions; }
 
     public void SetUnitName(string _unitName) { unitName = _unitName; }
     public void SetCharName(string _charName) { charName = _charName; }
@@ -66,17 +70,25 @@ public class Units : MonoBehaviour
     public void SetMoveSpeed(float _moveSpeed) { moveSpeed = _moveSpeed; }
     public void SetRotate(float _rotate) { rotate = _rotate; }
     public void SetRange(float _range) { range = _range; }
+    public void SetIsRange(bool _isRange) { isRange = _isRange; }
     public void SetIsAlive(bool _isAlive) { isAlive = _isAlive; }
     public void SetIsSelect(bool _isSelect) { isSelect = _isSelect; }
     public void SetUnitCost(int _unitCost) { unitCost = _unitCost; }
     public void SetUnitWorth(int _unitWorth) { unitWorth = _unitWorth; }
-
-    public void SetFirstContact(Units _firstContact) { firstContact = _firstContact; }
+    public void SetWeight(int _weight) { weight = _weight; }
+    
     public void SetEnemy(Units _enemy) { enemy = _enemy; }
     public void SetDirectEnemy(GameObject _directEnemy) { directEnemy = _directEnemy; }
 
     void Start()
     {
+        if (transform.GetComponent<Units>().GetIsRange() == true)
+        {
+            unitRange = transform.gameObject.AddComponent<SphereCollider>();
+            unitRange.radius = GetRange();
+            unitRange.isTrigger = true;
+        }
+
         positions = new List<Vector3>();
         canDo = true;
     }
@@ -93,21 +105,21 @@ public class Units : MonoBehaviour
 
     public void moveTo()
     {
-        if (positions.Count > 0)
+        if (GetPositions().Count > 0)
         {
             // Movement to the positions in the list.
-            moveLoc = positions[0];
+            moveLoc = GetPositions()[0];
 
             //transform.LookAt(moveLoc * GetRotate() * Time.deltaTime);
             transform.position = Vector3.MoveTowards(transform.position, moveLoc, GetMoveSpeed() * Time.deltaTime);
 
             if (transform.position == moveLoc)
             {
-                positions.Remove(moveLoc);
+                GetPositions().Remove(moveLoc);
             }
         }
 
-        else if (positions.Count == 0 && directEnemy)
+        else if (GetPositions().Count == 0 && directEnemy)
         {
             transform.position = Vector3.MoveTowards(transform.position, directEnemy.transform.position, GetMoveSpeed() * Time.deltaTime);
         }
@@ -118,65 +130,53 @@ public class Units : MonoBehaviour
     {
         if (canDo)
         {
-            StartCoroutine(AttackCycle());
-            canDo = false;
+            if (transform.tag == "Player Unit")
+            {
+                StartCoroutine(AttackCycle());
+                canDo = false;
+            }
+
+           // else if (transform.tag == "Enemy Unit")
+            {
+               // StartCoroutine(EnemyCycle());
+               // canDo = false;
+            }
         }
     }
 
     void OnCollisionEnter(Collision col)
     {
-        if (col.transform.tag != "Ground")
+        if (col.transform.tag != "Ground" || col.transform != unitRange)
         {
             foreach (ContactPoint con in col)
             {
-                if (transform.tag == "Player Unit")
+                if (transform.tag == "Player Unit" && !GetIsRange())
                 {
                     angNormal = Vector3.Angle(con.point, Vector3.forward);
-                    Debug.Log(angNormal);
+                    //Debug.Log(angNormal);
                     Destroy(transform.GetComponent<Rigidbody>());
                     transform.GetComponent<Collider>().isTrigger = true;
                 }
-
-                else if (transform.tag == "Enemy Unit")
-                {
-                    transform.gameObject.GetComponent<Units>().SetFirstContact(col.gameObject.GetComponent<Units>());
-                    angNormal = Vector3.Angle(con.point, Vector3.forward);
-                } 
             }
         }
     }
 
     void OnTriggerStay(Collider col)
     {
-        if (transform.tag == "Player Unit")
+        if (col != unitRange)
         {
-            if (GetEnemy() != null)
+            if (transform.tag == "Player Unit")
             {
-                if (col.tag != "Player Unit")
+                if (GetEnemy() != null)
                 {
-                    combat();
-                    Debug.Log(GetEnemy().GetHealth());
-                    Debug.Log(GetHealth());
-                    if (GetHealth() <= 0)
+                    if (col.tag != "Player Unit")
                     {
-                        // Die here.
-                    }
-                }
-            }
-        }
-
-        else if (transform.tag == "Enemy Unit")
-        {
-            //if (GetEnemy() != null)
-            {
-                if (col.tag != "Enemy Unit")
-                {
-                    combat();
-                    Debug.Log(GetEnemy().GetHealth());
-                    Debug.Log(GetHealth());
-                    if (GetHealth() <= 0)
-                    {
-                        // Die here.
+                        combat();
+                        Debug.Log(GetEnemy().GetHealth());
+                        if (GetHealth() <= 0)
+                        {
+                            // Die here.
+                        }
                     }
                 }
             }
@@ -185,9 +185,8 @@ public class Units : MonoBehaviour
 
     void OnTriggerExit(Collider col)
     {
-        if (transform.tag == "Player Unit")
+        if (transform.tag == "Player Unit" && !GetIsRange())
         {
-            Debug.Log("Hi.");
             transform.GetComponent<Collider>().isTrigger = false;
             transform.gameObject.AddComponent<Rigidbody>();
         }
@@ -200,4 +199,12 @@ public class Units : MonoBehaviour
         yield return new WaitForSeconds(GetAttSpeed());
         canDo = true;
     }
+
+    /*IEnumerator EnemyCycle()
+    {
+        heightDiff = transform.position.y - .transform.position.y;
+        .SetHealth.GetHealth() - (GetAttDmg() + heightDiff) * .GetDef());
+        yield return new WaitForSeconds(GetAttSpeed());
+        canDo = true;
+    }*/
 }

@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -10,7 +9,7 @@ public class GameManager : MonoBehaviour
 
     // List of all selected units.
     private List<Units> selectedUnit;
-    private List<Units> allUnits;
+    public List<Units> allUnits;
 
     // Sets the positions.
     private Vector3 targetPos;
@@ -36,7 +35,10 @@ public class GameManager : MonoBehaviour
     private bool canDo; // Can capture.
     private bool canSelect; // Is selectable.
 
-    void Start()
+    public List<Units> GetAllUnits() { return allUnits; }
+    
+
+    void Awake()
     {
         // Singleton setting.
         if (instance == null)
@@ -60,7 +62,7 @@ public class GameManager : MonoBehaviour
         cleared = false;
         canDo = true;
     }
-
+    
     void Update()
     {
         // Calling functions.
@@ -91,7 +93,7 @@ public class GameManager : MonoBehaviour
                     {
                         // Adding the targeted unit to the select units list.
                         selectedUnit.Add(hit.transform.gameObject.GetComponent<Units>());
-                        hit.transform.gameObject.GetComponentInChildren<Units>().SetIsSelect(true);
+                        hit.transform.gameObject.GetComponent<Units>().SetIsSelect(true);
                         canRun = true;
                         canSelect = false;
                     }
@@ -108,7 +110,7 @@ public class GameManager : MonoBehaviour
                 {
                     if (select.Contains(Camera.main.WorldToScreenPoint(unit.transform.position), true))
                     {
-                        Debug.Log(unit);
+                        // Highlight Unit
                     }
                 }
             }
@@ -125,16 +127,14 @@ public class GameManager : MonoBehaviour
                     if (select.Contains(Camera.main.WorldToScreenPoint(unit.transform.position), true))
                     {
                         selectedUnit.Add(unit);
-                        unit.GetComponentInChildren<Units>().SetIsSelect(true);
+                        unit.GetComponent<Units>().SetIsSelect(true);
                         canRun = true;
                         canSelect = false;
                     }
                 }
             }
         }
-
     }
-
 
     // Sets the position for the transform to move to.
     public void movePos()
@@ -149,14 +149,20 @@ public class GameManager : MonoBehaviour
                     // Clear the positions for a selected unit.
                     foreach (Units units in selectedUnit)
                     {
-                        units.GetPosList().Clear();
+                        units.GetPositions().Clear();
                         units.SetDirectEnemy(null);
                     }
+
                     cleared = true;
                 }
 
                 if (hit.transform.tag == "Ground" || hit.transform.tag == "Player Unit")
                 {
+                    foreach (Units unit in selectedUnit)
+                    {
+                        unit.SetEnemy(null);
+                    }
+
                     if (canDo && !canSelect)
                     {
                         // Captures the target location.
@@ -183,15 +189,6 @@ public class GameManager : MonoBehaviour
                         {
                             unit.SetDirectEnemy(hit.transform.gameObject);
                             unit.SetEnemy(hit.transform.gameObject.GetComponent<Units>());
-                            Debug.Log(unit.GetDirectEnemy());
-                        }
-
-                        foreach (Units unit in allUnits)
-                        {
-                            if (unit.tag == "Enemy Units")
-                            {
-                                unit.SetEnemy(unit.GetFirstContact());
-                            }
                         }
                     }
                 }
@@ -206,7 +203,7 @@ public class GameManager : MonoBehaviour
                         // Clears the selected units.
                         foreach (Units unit in selectedUnit)
                         {
-                            unit.gameObject.GetComponentInChildren<Units>().SetIsSelect(false);
+                            unit.gameObject.GetComponent<Units>().SetIsSelect(false);
                         }
                         selectedUnit.Clear();
                         canSelect = true;
@@ -217,7 +214,7 @@ public class GameManager : MonoBehaviour
                     {
                         selectedUnit.Clear();
                         selectedUnit.Add(hit.transform.gameObject.GetComponent<Units>());
-                        hit.transform.gameObject.GetComponentInChildren<Units>().SetIsSelect(true);
+                        hit.transform.gameObject.GetComponent<Units>().SetIsSelect(true);
                         canRun = true;
                         canSelect = false;
                     }
@@ -236,13 +233,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void OnGUI()
+    /*void OnGUI()
     {
         if (Input.GetMouseButton(0))
         {
             GUI.Box(new Rect(startMouse.x, startMouse.y, (mousePos.x - startMouse.x), (mousePos.y - startMouse.y)), box);
         }
-    }
+    }*/
 
     // The list input frequency.
     IEnumerator getPos()
